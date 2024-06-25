@@ -15,12 +15,19 @@ def load_data():
 
 data = load_data()
 
-# Preprocess the data
-data['Frequency(Kmph)'] = data['Frequency(Kmph)'].astype(float)
-data['Weight(Kg)'] = data['Weight(Kg)'].astype(float)
+# Create 'CriticalTemperature' column
+data['CriticalTemperature'] = data.apply(lambda row: row['Temperature'] if row['BrakesApplied'] == 1 else np.nan, axis=1)
 
-X = data[['time', 'Frequency(Kmph)', 'Weight(Kg)']]
-y = data['critical_temp']
+# Forward fill to propagate the critical temperature to non-braking events
+data['CriticalTemperature'] = data['CriticalTemperature'].ffill()
+
+# Drop rows with NaN values in 'CriticalTemperature'
+data = data.dropna(subset=['CriticalTemperature'])
+
+# Prepare features (X) and target (y)
+features = ['time', 'Frequency(Kmph)', 'Weight(Kg)']
+X = data[features]
+y = data['CriticalTemperature']
 
 # Split the data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
