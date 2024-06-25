@@ -5,7 +5,7 @@ import pickle
 import joblib
 
 # Load the model
-regressor_rf = joblib.load(open('rf_braking.joblib'),'rb'))
+regressor_rf = joblib.load(open('rf_braking.joblib','rb'))
 
 regressor_lr = pickle.load(open('lr_braking.sav', 'rb'))
 
