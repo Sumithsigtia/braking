@@ -52,7 +52,7 @@ frequency = input_df['Frequency(Kmph)'][0]
 weight = input_df['Weight(Kg)'][0]
 
 if model_choice == "Random Forest":
-    
+    critical_temps=24
 else:
     critical_temps = [regressor_lr.predict([[t, frequency, weight]])[0] for t in time_range]
 
