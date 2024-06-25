@@ -3,8 +3,12 @@ import pandas as pd
 import numpy as np
 import pickle
 
+import joblib
+
+regressor_rf = joblib.load('rf_braking.joblib')
+
+
 # Load the models
-regressor_rf = pickle.load(open('rf_braking.sav', 'rb'))
 regressor_lr = pickle.load(open('lr_braking.sav', 'rb'))
 
 # Title and description
