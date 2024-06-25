@@ -4,10 +4,10 @@ import numpy as np
 import pickle
 
 # Load the models
-with open('/content/drive/MyDrive/final train R&D/rf_braking.sav', 'rb') as rf_file:
+with open('rf_braking.sav', 'rb') as rf_file:
     regressor_rf = pickle.load(rf_file)
 
-with open('/content/drive/MyDrive/final train R&D/lr_braking.sav', 'rb') as lr_file:
+with open('lr_braking.sav', 'rb') as lr_file:
     regressor_lr = pickle.load(lr_file)
 
 # Title and description
@@ -20,7 +20,7 @@ This app predicts the critical temperature for applying brakes based on time, fr
 st.sidebar.header("Input Parameters")
 
 def user_input_features():
-    time = st.sidebar.slider("Time (e.g., Unix timestamp or float)", 0, 200, 100)
+    time = st.sidebar.slider("Time (Seconds)", 0, 200, 100)
     frequency = st.sidebar.slider("Frequency (Kmph)", 0, 150, 50)
     weight = st.sidebar.slider("Weight (Kg)", 0, 200, 100)
     data = {
