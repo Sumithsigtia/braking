@@ -4,11 +4,8 @@ import numpy as np
 import pickle
 
 # Load the models
-with open('rf_braking.sav', 'rb') as rf_file:
-    regressor_rf = pickle.load(rf_file)
-
-with open('lr_braking.sav', 'rb') as lr_file:
-    regressor_lr = pickle.load(lr_file)
+regressor_rf = pickle.load(open('rf_braking.sav', 'rb'))
+regressor_lr = pickle.load(open('lr_braking.sav', 'rb'))
 
 # Title and description
 st.title("Brake Application Prediction")
