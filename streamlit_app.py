@@ -1,13 +1,45 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle
-import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
 
-# Load the model
-regressor_rf = joblib.load('rf_braking.joblib')
+# Load the dataset
+@st.cache_data
+def load_data():
+    data = pd.read_csv('BrakingEvents.csv')
+    return data
 
-regressor_lr = pickle.load(open('lr_braking.sav', 'rb'))
+data = load_data()
+
+# Preprocess the data
+data['Frequency(Kmph)'] = data['Frequency(Kmph)'].astype(float)
+data['Weight(Kg)'] = data['Weight(Kg)'].astype(float)
+
+X = data[['time', 'Frequency(Kmph)', 'Weight(Kg)']]
+y = data['critical_temp']
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train models
+@st.cache_resource
+def train_models(X_train, y_train):
+    rf = RandomForestRegressor(n_estimators=100, random_state=42)
+    rf.fit(X_train, y_train)
+
+    dt = DecisionTreeRegressor(random_state=42)
+    dt.fit(X_train, y_train)
+
+    lr = LinearRegression()
+    lr.fit(X_train, y_train)
+
+    return rf, dt, lr
+
+regressor_rf, regressor_dt, regressor_lr = train_models(X_train, y_train)
 
 # Title and description
 st.title("Brake Application Prediction")
@@ -39,19 +71,23 @@ st.write(input_df)
 # Prediction using Random Forest model
 rf_prediction = regressor_rf.predict(input_df)[0]
 
+# Prediction using Decision Tree model
+dt_prediction = regressor_dt.predict(input_df)[0]
+
 # Prediction using Linear Regression model
 lr_prediction = regressor_lr.predict(input_df)[0]
 
 # Display predictions
 st.subheader("Predicted Critical Temperature for Applying Brakes")
 st.write(f"**Random Forest Prediction:** {rf_prediction:.2f}")
+st.write(f"**Decision Tree Prediction:** {dt_prediction:.2f}")
 st.write(f"**Linear Regression Prediction:** {lr_prediction:.2f}")
 
 # Visualization section
 st.subheader("Visualize Prediction")
 
 # User selects model for visualization
-model_choice = st.selectbox("Select Model for Visualization", ["Random Forest", "Linear Regression"])
+model_choice = st.selectbox("Select Model for Visualization", ["Random Forest", "Decision Tree", "Linear Regression"])
 
 # Generate data for visualization
 time_range = np.linspace(0, 200, 500)
@@ -60,12 +96,12 @@ weight = input_df['Weight(Kg)'][0]
 
 if model_choice == "Random Forest":
     critical_temps = [regressor_rf.predict([[t, frequency, weight]])[0] for t in time_range]
+elif model_choice == "Decision Tree":
+    critical_temps = [regressor_dt.predict([[t, frequency, weight]])[0] for t in time_range]
 else:
     critical_temps = [regressor_lr.predict([[t, frequency, weight]])[0] for t in time_range]
 
 # Plot the predicted critical temperatures over time
-import matplotlib.pyplot as plt
-
 fig, ax = plt.subplots()
 ax.plot(time_range, critical_temps, label=f'Predicted Critical Temperature ({model_choice})')
 ax.axvline(x=input_df['time'][0], color='red', linestyle='--', label='Current Time')
