@@ -3,11 +3,6 @@ import pandas as pd
 import numpy as np
 import pickle
 
-import joblib
-
-regressor_rf = joblib.load('rf_braking.joblib')
-
-
 # Load the models
 regressor_lr = pickle.load(open('lr_braking.sav', 'rb'))
 
@@ -38,15 +33,11 @@ input_df = user_input_features()
 st.subheader("Input Parameters")
 st.write(input_df)
 
-# Prediction using Random Forest model
-rf_prediction = regressor_rf.predict(input_df)[0]
-
 # Prediction using Linear Regression model
 lr_prediction = regressor_lr.predict(input_df)[0]
 
 # Display predictions
 st.subheader("Predicted Critical Temperature for Applying Brakes")
-st.write(f"**Random Forest Prediction:** {rf_prediction:.2f}")
 st.write(f"**Linear Regression Prediction:** {lr_prediction:.2f}")
 
 # Visualization section
@@ -61,7 +52,7 @@ frequency = input_df['Frequency(Kmph)'][0]
 weight = input_df['Weight(Kg)'][0]
 
 if model_choice == "Random Forest":
-    critical_temps = [regressor_rf.predict([[t, frequency, weight]])[0] for t in time_range]
+    
 else:
     critical_temps = [regressor_lr.predict([[t, frequency, weight]])[0] for t in time_range]
 
