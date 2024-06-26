@@ -1,60 +1,51 @@
+# Import necessary libraries
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Load the dataset
-@st.cache_data
-def load_data():
-    data = pd.read_csv('BrakingEvents.csv')
-    return data
+# Load dataset
+df = pd.read_csv("Merged_Train.csv")
 
-data = load_data()
+# Feature engineering: calculate temperature change and flag braking points
+df['Temperature_Change'] = df['Temperature'].diff()
+temperature_threshold = -10  # Threshold for significant temperature drop
+df['BrakesApplied'] = np.where(df['Temperature_Change'] <= temperature_threshold, 1, 0)
+df['CriticalTemperature'] = df.apply(lambda row: row['Temperature'] if row['BrakesApplied'] == 1 else np.nan, axis=1)
 
-# Create 'CriticalTemperature' column
-data['CriticalTemperature'] = data.apply(lambda row: row['Temperature'] if row['BrakesApplied'] == 1 else np.nan, axis=1)
-
-# Forward fill to propagate the critical temperature to non-braking events
-data['CriticalTemperature'] = data['CriticalTemperature'].ffill()
-
-# Drop rows with NaN values in 'CriticalTemperature'
-data = data.dropna(subset=['CriticalTemperature'])
-
-# Prepare features (X) and target (y)
+# Prepare the data for training
 features = ['time', 'Frequency(Kmph)', 'Weight(Kg)']
-X = data[features]
-y = data['CriticalTemperature']
+target = 'Temperature'
+X = df[features].dropna()
+y = df[target].dropna()
 
-# Split the data
+# Split the data into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Train models
-@st.cache_resource
-def train_models(X_train, y_train):
-    rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
+# Random Forest
+regressor_rf = RandomForestRegressor(n_estimators=100, random_state=42)
+regressor_rf.fit(X_train, y_train)
 
-    dt = DecisionTreeRegressor(random_state=42)
-    dt.fit(X_train, y_train)
+# Decision Tree
+regressor_dt = DecisionTreeRegressor(random_state=42)
+regressor_dt.fit(X_train, y_train)
 
-    lr = LinearRegression()
-    lr.fit(X_train, y_train)
+# Linear Regression
+regressor_lr = LinearRegression()
+regressor_lr.fit(X_train, y_train)
 
-    return rf, dt, lr
-
-regressor_rf, regressor_dt, regressor_lr = train_models(X_train, y_train)
-
-# Title and description
+# Streamlit app layout
 st.title("Brake Application Prediction")
-st.write("""
-This app predicts the critical temperature for applying brakes based on time, frequency, and weight.
-""")
+st.write("This app predicts the critical temperature for applying brakes based on time, frequency, and weight.")
 
-# Create input fields for user input
+# Sidebar for user input
 st.sidebar.header("Input Parameters")
 
 def user_input_features():
@@ -75,13 +66,9 @@ input_df = user_input_features()
 st.subheader("Input Parameters")
 st.write(input_df)
 
-# Prediction using Random Forest model
+# Make predictions
 rf_prediction = regressor_rf.predict(input_df)[0]
-
-# Prediction using Decision Tree model
 dt_prediction = regressor_dt.predict(input_df)[0]
-
-# Prediction using Linear Regression model
 lr_prediction = regressor_lr.predict(input_df)[0]
 
 # Display predictions
@@ -101,12 +88,17 @@ time_range = np.linspace(0, 200, 500)
 frequency = input_df['Frequency(Kmph)'][0]
 weight = input_df['Weight(Kg)'][0]
 
+# Prediction function for selected model
+def predict_critical_temperature(model, time, frequency, weight):
+    return model.predict([[time, frequency, weight]])[0]
+
+# Select model and generate predictions
 if model_choice == "Random Forest":
-    critical_temps = [regressor_rf.predict([[t, frequency, weight]])[0] for t in time_range]
+    critical_temps = [predict_critical_temperature(regressor_rf, t, frequency, weight) for t in time_range]
 elif model_choice == "Decision Tree":
-    critical_temps = [regressor_dt.predict([[t, frequency, weight]])[0] for t in time_range]
+    critical_temps = [predict_critical_temperature(regressor_dt, t, frequency, weight) for t in time_range]
 else:
-    critical_temps = [regressor_lr.predict([[t, frequency, weight]])[0] for t in time_range]
+    critical_temps = [predict_critical_temperature(regressor_lr, t, frequency, weight) for t in time_range]
 
 # Plot the predicted critical temperatures over time
 fig, ax = plt.subplots()
@@ -118,3 +110,39 @@ ax.legend()
 ax.set_title(f'Critical Temperature Prediction over Time ({model_choice})')
 
 st.pyplot(fig)
+
+# Additional visualization of dataset
+st.subheader("Dataset Overview")
+st.write(df.head())
+
+st.subheader("Temperature Drop Analysis")
+fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+
+# Histogram for Temperature Change
+sns.histplot(df['Temperature_Change'].dropna(), bins=30, kde=True, ax=axs[0])
+axs[0].set_title('Distribution of Temperature Change')
+axs[0].set_xlabel('Temperature Change')
+axs[0].set_ylabel('Frequency')
+
+# Scatter plot of Temperature vs. Time
+sns.scatterplot(x=df['time'], y=df['Temperature'], hue=df['BrakesApplied'], ax=axs[1])
+axs[1].set_title('Temperature over Time with Brakes Applied Flag')
+axs[1].set_xlabel('Time')
+axs[1].set_ylabel('Temperature')
+
+st.pyplot(fig)
+
+# Evaluate models on test data
+st.subheader("Model Evaluation on Test Data")
+
+def evaluate_model(model, X_test, y_test, model_name):
+    y_pred = model.predict(X_test)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    st.write(f"**{model_name}**")
+    st.write(f"Mean Squared Error: {mse:.2f}")
+    st.write(f"R-squared: {r2:.2f}")
+
+evaluate_model(regressor_rf, X_test, y_test, "Random Forest")
+evaluate_model(regressor_dt, X_test, y_test, "Decision Tree")
+evaluate_model(regressor_lr, X_test, y_test, "Linear Regression")
