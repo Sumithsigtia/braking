@@ -110,39 +110,3 @@ ax.legend()
 ax.set_title(f'Critical Temperature Prediction over Time ({model_choice})')
 
 st.pyplot(fig)
-
-# Additional visualization of dataset
-st.subheader("Dataset Overview")
-st.write(df.head())
-
-st.subheader("Temperature Drop Analysis")
-fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-
-# Histogram for Temperature Change
-sns.histplot(df['Temperature_Change'].dropna(), bins=30, kde=True, ax=axs[0])
-axs[0].set_title('Distribution of Temperature Change')
-axs[0].set_xlabel('Temperature Change')
-axs[0].set_ylabel('Frequency')
-
-# Scatter plot of Temperature vs. Time
-sns.scatterplot(x=df['time'], y=df['Temperature'], hue=df['BrakesApplied'], ax=axs[1])
-axs[1].set_title('Temperature over Time with Brakes Applied Flag')
-axs[1].set_xlabel('Time')
-axs[1].set_ylabel('Temperature')
-
-st.pyplot(fig)
-
-# Evaluate models on test data
-st.subheader("Model Evaluation on Test Data")
-
-def evaluate_model(model, X_test, y_test, model_name):
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    st.write(f"**{model_name}**")
-    st.write(f"Mean Squared Error: {mse:.2f}")
-    st.write(f"R-squared: {r2:.2f}")
-
-evaluate_model(regressor_rf, X_test, y_test, "Random Forest")
-evaluate_model(regressor_dt, X_test, y_test, "Decision Tree")
-evaluate_model(regressor_lr, X_test, y_test, "Linear Regression")
