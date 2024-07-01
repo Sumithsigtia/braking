@@ -72,7 +72,7 @@ dt_prediction = regressor_dt.predict(input_df)[0]
 lr_prediction = regressor_lr.predict(input_df)[0]
 
 # Display predictions
-st.subheader("Predicted Critical Temperature for Applying Brakes")
+st.subheader("Predicted Critical Temperature (°C) for Applying Brakes")
 st.write(f"**Random Forest Prediction:** {rf_prediction:.2f}")
 st.write(f"**Decision Tree Prediction:** {dt_prediction:.2f}")
 st.write(f"**Linear Regression Prediction:** {lr_prediction:.2f}")
